@@ -1,3 +1,19 @@
+%% MIE377 (Winter 2019) - Project 1
+% The purpose of this program is to implementtwo different stochastic 
+% processes to simulate scenarios: 
+% (i) a Gaussian process, and 
+% (ii) a non-normal stochastic process with higher moments
+% 
+% and to use these simulations to test the out-of-sample performance of two
+% portfolio optimization models: 
+% 1. CVaR
+% 2. Robust CVaR
+%
+% Student Name: Joshua Chang, Jinansh Shah 
+% Student ID: 1003083147, 1003062614
+
+
+
 clc
 clear all
 format short
@@ -114,7 +130,7 @@ for t = 1 : NoPeriods
     [alpha, beta, D, mu, Q] = FF(periodReturns, periodFactRet);
     
     for i = 1:NoSimulations
-        rets{i} = MCList{i}(alpha, beta, D, geomean(periodFactRet+1)-1, cov(periodFactRet)); 
+        rets{i} = MCList{i}(alpha, beta, D, periodFactRet); 
         for j = 1:NoStrats
             k = j + (i - 1) * 2;
             x{k}(:,t) = invList{j}(rets{i}');

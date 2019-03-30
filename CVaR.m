@@ -1,8 +1,7 @@
 function [x] = CVaR(rets)
-    size(rets)
     % Defining parameters
     l = 0.1;
-    alpha = 0.90;
+    alpha = 0.95;
     S = 5000; 
     n = 20; 
     
