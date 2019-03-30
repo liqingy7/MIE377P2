@@ -68,8 +68,7 @@ testEnd   = testStart + calmonths(6) - days(1);
 NoPeriods = 6;
 
 % Monte-Carlo simulations 
-%MCList = {'MC_Gaussian' 'MC_HM'};
-MCList = {'MC_Gaussian'};
+MCList = {'MC_Gaussian' 'MC_HM'};
 MCList = cellfun(@str2func, MCList, 'UniformOutput', false);
 NoSimulations = length(MCList);
 
@@ -84,8 +83,8 @@ S = 5000; % number of scenarios
 
 
 % Tags for factor models under different investment strategies
-% tags = {'MVO (CAPM)' 'Card MVO (CAPM)' 'MVO (FF)' 'Card MVO (FF)' ...
-%         'MVO (PCA)' 'Card MVO (PCA)'};
+tags = {'CVaR (Gaussian)' 'Robust CVaR (Gaussian)' 'CVaR (Non-normal)' ...
+    'Robust CVaR (Non-normal)'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 3. Construct and rebalance your portfolios
@@ -160,3 +159,129 @@ for t = 1 : NoPeriods
 
 end
 
+
+
+%--------------------------------------------------------------------------
+% 4.2 Plot the portfolio values 
+% 
+% Note: The code below plots all portfolios onto a single plot. However,
+% you may want to split this into multiple plots for clarity, or to
+% compare a subset of the portfolios. 
+%--------------------------------------------------------------------------
+plotDates = dates(dates >= datetime('2013-01-01'));
+
+fig1 = figure(1);
+
+for k = 1 : NoSimulations * NoStrats
+    
+    plot( plotDates, portfValue(:,k))
+    hold on
+    
+end
+
+legend(tags, 'Location', 'eastoutside','FontSize',12);
+datetick('x','dd-mmm-yyyy','keepticks','keeplimits');
+set(gca,'XTickLabelRotation',30);
+title('Portfolio value', 'FontSize', 14)
+ylabel('Value','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(fig1,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(fig1,'Position');
+set(fig1,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+% If you want to save the figure as .pdf for use in LaTeX
+% print(fig1,'fileName','-dpdf','-r0');
+
+% If you want to save the figure as .png for use in MS Word
+print(fig1,'fileName','-dpng','-r0');
+
+%--------------------------------------------------------------------------
+% 4.3 Plot the portfolio weights 
+%--------------------------------------------------------------------------
+
+% CVaR (Gaussian) Plot
+fig2 = figure(2);
+area(x{1}')
+legend(tickers, 'Location', 'eastoutside','FontSize',12);
+title('CVaR (Gaussian) portfolio weights', 'FontSize', 14)
+ylabel('Weights','interpreter','latex','FontSize',12);
+xlabel('Rebalance period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(fig2,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(fig2,'Position');
+set(fig2,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+% If you want to save the figure as .pdf for use in LaTeX
+% print(fig2,'fileName2','-dpdf','-r0');
+
+% If you want to save the figure as .png for use in MS Word
+print(fig2,'fileName2','-dpng','-r0');
+
+
+
+% Robust CVaR (Gaussian) Plot
+fig3 = figure(3);
+area(x{2}')
+legend(tickers, 'Location', 'eastoutside','FontSize',12);
+title('Robust CVaR (Gaussian) portfolio weights', 'FontSize', 14)
+ylabel('Weights','interpreter','latex','FontSize',12);
+xlabel('Rebalance period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(fig3,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(fig3,'Position');
+set(fig3,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+% If you want to save the figure as .pdf for use in LaTeX
+% print(fig2,'fileName2','-dpdf','-r0');
+
+% If you want to save the figure as .png for use in MS Word
+print(fig3,'fileName2','-dpng','-r0');   
+
+% Robust CVaR (Non-normal) Plot
+fig4 = figure(4);
+area(x{3}')
+legend(tickers, 'Location', 'eastoutside','FontSize',12);
+title('CVaR (Non-normal) portfolio weights', 'FontSize', 14)
+ylabel('Weights','interpreter','latex','FontSize',12);
+xlabel('Rebalance period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(fig4,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(fig4,'Position');
+set(fig4,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+% If you want to save the figure as .pdf for use in LaTeX
+% print(fig2,'fileName2','-dpdf','-r0');
+
+% If you want to save the figure as .png for use in MS Word
+print(fig4,'fileName2','-dpng','-r0'); 
+
+
+
+
+% Robust CVaR (Gaussian) Plot
+fig5 = figure(5);
+area(x{4}')
+legend(tickers, 'Location', 'eastoutside','FontSize',12);
+title('Robust CVaR (Non-normal) portfolio weights', 'FontSize', 14)
+ylabel('Weights','interpreter','latex','FontSize',12);
+xlabel('Rebalance period','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(fig5,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(fig5,'Position');
+set(fig5,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+% If you want to save the figure as .pdf for use in LaTeX
+% print(fig2,'fileName2','-dpdf','-r0');
+
+% If you want to save the figure as .png for use in MS Word
+print(fig5,'fileName2','-dpng','-r0');   
