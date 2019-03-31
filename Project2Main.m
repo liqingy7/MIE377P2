@@ -9,14 +9,15 @@
 % 1. CVaR
 % 2. Robust CVaR
 %
-% Student Name: Joshua Chang, Jinansh Shah 
-% Student ID: 1003083147, 1003062614
+% Student Name: Joshua Chang, Jinansh Shah, Qingyang Li
+% Student ID: 1003083147, 1003062614, 1002741063
 
 
 
 clc
 clear all
 format short
+warning('off','all')
 
 % Program Start
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,6 +95,10 @@ tags = {'CVaR (Gaussian)' 'Robust CVaR (Gaussian)' 'CVaR (Non-normal)' ...
 % transaction cost variable, and current value of the portfolio.
 currentVal = zeros(NoPeriods, NoStrats * NoSimulations); 
 toDay = 0;
+pers = NaT(NoPeriods, 1);
+
+exp_r = ones (NoPeriods, NoSimulations*NoStrats); 
+realized_std_dev = ones (NoPeriods, NoSimulations*NoStrats); 
 
 for t = 1 : NoPeriods
     
@@ -126,13 +131,14 @@ for t = 1 : NoPeriods
     fromDay = toDay + 1;
     toDay   = toDay + size(periodPrices,1);
     
-    [alpha, beta, D, mu, Q] = FF(periodReturns, periodFactRet);
+    [alpha, beta, D, mu, Q{t}] = FF(periodReturns, periodFactRet);
     
     for i = 1:NoSimulations
         rets{i} = MCList{i}(alpha, beta, D, periodFactRet); 
         for j = 1:NoStrats
             k = j + (i - 1) * 2;
             x{k}(:,t) = invList{j}(rets{i}');
+            exp_r(t, k) = mu'*x{k}(:,t);
         end
     end
     
@@ -146,20 +152,88 @@ for t = 1 : NoPeriods
         portfValue(fromDay:toDay,k) = periodPrices * NoShares{k};
         
         NoSharesOld{k} = NoShares{k};
-        %------------------------------------------------------------------
         
+        
+        realized_std_dev(t, k) = std(periodReturns*x{k}(:, t));
     end
 
     % Update your calibration and out-of-sample test periods
     calStart = calStart + calmonths(6);
     calEnd   = calStart + calmonths(12) - days(1);
-    
+    pers(t) = testStart; 
     testStart = testStart + calmonths(6);
     testEnd   = testStart + calmonths(6) - days(1);
 
 end
 
 
+
+%--------------------------------------------------------------------------
+% 4.1 Analysis of realized returns/variance
+%--------------------------------------------------------------------------
+
+% Initializing portfolio returns and variance to 0 - to be calculated later
+plotDates = dates(dates >= datetime('2013-01-01'));
+portf_rets = zeros (length(plotDates)-1, NoStrats * NoSimulations);
+realized_returns = zeros(NoStrats * NoSimulations, 1);
+exp_sd = zeros(NoPeriods, NoStrats * NoSimulations);
+% Calculating annualized return of each portfolio over the 3 years.
+for k = 1 : NoSimulations * NoStrats
+    
+    % Calculating the weekly returns 
+    portf_rets(:, k) =  (portfValue(2:(length(plotDates)),k)- portfValue(1:(length(plotDates)-1),k)) ./ portfValue(1:(length(plotDates)-1),k) + ones(156, 1) ; 
+    % Converting weekly returns to annualized returns
+    realized_returns(k) = (geomean(portf_rets(:, k)))^52 -1;
+    
+    exp_r(1, k) = (geomean(exp_r(:, k) + 1))^52 -1;
+
+    % Calculating expected portfolio variance for each portfolio
+    for t = 1:NoPeriods
+        exp_sd(t, k) = sqrt(x{k}(:, t)' * Q{t} * x{k}(:, t));
+    end
+end
+
+
+tags_exp_real = {'CVaR (Gaussian) Expected' 'CVaR (Gaussian) Realized'...
+    'Robust CVaR (Gaussian) Expected' 'Robust CVaR (Gaussian) Realized'  ...
+    'CVaR (Non-normal) Expected' 'CVaR (Non-normal) Realized' ...
+    'Robust CVaR (Non-normal) Expected' 'Robust CVaR (Non-normal) Realized'};
+
+fig11 = figure(11);
+plot( pers, exp_sd(:,1), 'b--')
+hold on
+plot( pers, realized_std_dev(:,1), 'b-')
+hold on
+plot( pers, exp_sd(:,2), 'r--')
+hold on
+plot( pers, realized_std_dev(:,2), 'r-')
+hold on
+plot( pers, exp_sd(:,3), 'g--')
+hold on
+plot( pers, realized_std_dev(:, 3), 'g-')
+hold on
+plot( pers, exp_sd(:,4), 'k--')
+hold on
+plot( pers, realized_std_dev(:,4), 'k-')
+hold on
+
+legend(tags_exp_real, 'Location', 'eastoutside','FontSize',12);
+datetick('x','dd-mmm-yyyy','keepticks','keeplimits');
+set(gca,'XTickLabelRotation',30);
+title('Expected & Realized Volatility', 'FontSize', 14)
+ylabel('Volatility','interpreter','latex','FontSize',12);
+
+% Define the plot size in inches
+set(fig11,'Units','Inches', 'Position', [0 0 8, 5]);
+pos1 = get(fig11,'Position');
+set(fig11,'PaperPositionMode','Auto','PaperUnits','Inches',...
+    'PaperSize',[pos1(3), pos1(4)]);
+
+% If you want to save the figure as .pdf for use in LaTeX
+% print(fig1,'fileName','-dpdf','-r0');
+
+% If you want to save the figure as .png for use in MS Word
+print(fig11,'fileName11','-dpng','-r0');
 
 %--------------------------------------------------------------------------
 % 4.2 Plot the portfolio values 
@@ -265,7 +339,6 @@ print(fig4,'fileName2','-dpng','-r0');
 
 
 
-
 % Robust CVaR (Gaussian) Plot
 fig5 = figure(5);
 area(x{4}')
@@ -285,3 +358,66 @@ set(fig5,'PaperPositionMode','Auto','PaperUnits','Inches',...
 
 % If you want to save the figure as .png for use in MS Word
 print(fig5,'fileName2','-dpng','-r0');   
+
+
+%--------------------------------------------------------------------------
+% 4.4 Plot of loss distribution
+%--------------------------------------------------------------------------
+
+
+loss = -rets{1}' * x{1};
+
+fig6 = figure(6);
+histogram(loss, 50);
+xlabel('Portfolio losses ($\%$)','interpreter',...
+    'latex','FontSize',14);
+ylabel('Frequency','interpreter','latex','FontSize',14); 
+
+set(fig6,'Units','Inches', 'Position', [0 0 10, 4]);
+pos2 = get(fig6,'Position');
+set(fig6,'PaperPositionMode','Auto','PaperUnits','Inches',...
+'PaperSize',[pos2(3), pos2(4)])
+
+
+
+loss = -rets{1}' * x{2};
+
+fig7 = figure(7);
+histogram(loss, 50);
+xlabel('Portfolio losses ($\%$)','interpreter',...
+    'latex','FontSize',14);
+ylabel('Frequency','interpreter','latex','FontSize',14); 
+
+set(fig7,'Units','Inches', 'Position', [0 0 10, 4]);
+pos2 = get(fig7,'Position');
+set(fig7,'PaperPositionMode','Auto','PaperUnits','Inches',...
+'PaperSize',[pos2(3), pos2(4)])
+
+
+loss = -rets{2}' * x{3};
+
+fig8 = figure(8);
+histogram(loss, 50);
+xlabel('Portfolio losses ($\%$)','interpreter',...
+    'latex','FontSize',14);
+ylabel('Frequency','interpreter','latex','FontSize',14); 
+
+set(fig8,'Units','Inches', 'Position', [0 0 10, 4]);
+pos2 = get(fig8,'Position');
+set(fig8,'PaperPositionMode','Auto','PaperUnits','Inches',...
+'PaperSize',[pos2(3), pos2(4)])
+
+
+loss = -rets{2}' * x{4};
+
+fig9 = figure(9);
+histogram(loss, 50);
+xlabel('Portfolio losses ($\%$)','interpreter',...
+    'latex','FontSize',14);
+ylabel('Frequency','interpreter','latex','FontSize',14); 
+
+set(fig9,'Units','Inches', 'Position', [0 0 10, 4]);
+pos2 = get(fig9,'Position');
+set(fig9,'PaperPositionMode','Auto','PaperUnits','Inches',...
+'PaperSize',[pos2(3), pos2(4)])
+
